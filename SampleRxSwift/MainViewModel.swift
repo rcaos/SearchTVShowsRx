@@ -37,17 +37,26 @@ final class MainViewModel {
     input.query
       .filter { !$0.isEmpty }
       .debounce( RxTimeInterval.milliseconds(1000) , scheduler: MainScheduler.instance)
-      .subscribe(onNext: { query  in
+      .flatMap { query -> Observable<TVShowResult> in
         
         var delay = 1000
         if self.longRequest {
           delay = 5000
           self.longRequest = !self.longRequest
         }
-        self.searchShows(query: query, delay: delay)
-        
-      })
+        return self.search(query: query, delay: delay)
+    }
+    .map { result in
+      return [SingleSectionModel(header: "", items: result.results)]
+    }
+    .bind(to: showsObservableSubject)
     .disposed(by: disposeBag)
+  }
+  
+  func search(query: String, delay: Int) -> Observable<TVShowResult> {
+    let searchEndPoint = TVShowsProvider.searchTVShow(delay: delay, query: query)
+    
+    return client.request(searchEndPoint, TVShowResult.self)
   }
   
   
@@ -55,7 +64,6 @@ final class MainViewModel {
     let searchEndPoint = TVShowsProvider.searchTVShow(delay: delay, query: query)
     
     client.request(searchEndPoint, TVShowResult.self)
-      //.debug()
       .subscribe(onNext: { [weak self] result in
         print("--> results for \(query), Delay: [\(delay)ms]: [\(result.results.count)]")
         self?.createModel(header: query, with: result.results)
