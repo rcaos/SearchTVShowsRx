@@ -18,8 +18,6 @@ class MainViewController: UIViewController {
   var tableView: UITableView!
   var searchController:UISearchController!
   
-  var largeRequest = true
-  
   // Life Cycle
   
   init(viewModel: MainViewModel) {
@@ -99,6 +97,11 @@ class MainViewController: UIViewController {
       .shows
       .bind(to: tableView.rx.items(dataSource: dataSource))
       .disposed(by: disposeBag)
+    
+    searchController.searchBar.rx
+      .text.orEmpty
+      .bind(to: viewModel.input.query)
+      .disposed(by: disposeBag)
   }
   
   func setupButton() {
@@ -111,7 +114,7 @@ class MainViewController: UIViewController {
       .rx
       .tap
       .bind { [unowned self] in
-        self.largeRequest = true
+        //self.largeRequest = true
     }
     .disposed(by: disposeBag)
   }
@@ -126,25 +129,6 @@ class MainViewController: UIViewController {
 //MARK: - UISearchBarDelegate
 
 extension MainViewController: UISearchBarDelegate {
-  
-  func searchBarSearchButtonClicked(_ searchBar: UISearchBar) {
-    if let query = searchBar.text {
-      var delay = 1000
-      if largeRequest {
-        delay = 5000
-        largeRequest = !largeRequest
-      }
-      
-      viewModel.searchShows(query: query, delay: delay)
-      // jajajaj Business Logic here
-      //if query.lowercased() != lastSearch.lowercased() {
-      //print("-- Search Here CLicked")
-      //        clearResults()
-      //        lastSearch = query
-      //        search(for: query)
-      //}
-    }
-  }
   
   func searchBarCancelButtonClicked(_ searchBar: UISearchBar) {
     print("-- Search Cancell Button Clicked")

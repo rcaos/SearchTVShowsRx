@@ -15,6 +15,8 @@ final class MainViewModel {
   
   var showsObservableSubject = BehaviorSubject<[SingleSectionModel]>(value: [])
   
+  var longRequest = true
+  
   var input: Input
   var output: Output
   
@@ -28,7 +30,26 @@ final class MainViewModel {
   
   public func viewDidLoad() {
     searchShows(query: "The X Files", delay: 500)
+    subscribe()
   }
+  
+  private func subscribe() {
+    input.query
+      .filter { !$0.isEmpty }
+      .debounce( RxTimeInterval.milliseconds(1000) , scheduler: MainScheduler.instance)
+      .subscribe(onNext: { query  in
+        
+        var delay = 1000
+        if self.longRequest {
+          delay = 5000
+          self.longRequest = !self.longRequest
+        }
+        self.searchShows(query: query, delay: delay)
+        
+      })
+    .disposed(by: disposeBag)
+  }
+  
   
   func searchShows(query: String, delay: Int) {
     let searchEndPoint = TVShowsProvider.searchTVShow(delay: delay, query: query)
@@ -56,7 +77,9 @@ final class MainViewModel {
 
 extension MainViewModel {
   
-  public struct Input { }
+  public struct Input {
+    let query = BehaviorSubject<String>(value: "")
+  }
   
   public struct Output {
     let shows: Observable<[SingleSectionModel]>
