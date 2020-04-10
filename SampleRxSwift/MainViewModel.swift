@@ -37,7 +37,7 @@ final class MainViewModel {
     input.query
       .filter { !$0.isEmpty }
       .debounce( RxTimeInterval.milliseconds(1000) , scheduler: MainScheduler.instance)
-      .flatMap { query -> Observable<TVShowResult> in
+      .flatMapLatest { query -> Observable<TVShowResult> in
         
         var delay = 1000
         if self.longRequest {
