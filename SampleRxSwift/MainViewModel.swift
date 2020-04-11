@@ -11,20 +11,23 @@ import RxDataSources
 
 final class MainViewModel {
   
-  var disposeBag = DisposeBag()
+  private var disposeBag = DisposeBag()
   
-  var showsObservableSubject = BehaviorSubject<[SingleSectionModel]>(value: [])
+  private var showsObservableSubject = BehaviorSubject<[SingleSectionModel]>(value: [])
+  private var isRefreshingObservableSubject = BehaviorSubject<Bool>(value: false)
   
-  var longRequest = true
+  private var longRequest = true
   
   var input: Input
   var output: Output
   
-  var client: ApiClient
+  private var client: ApiClient
   
   init() {
     self.input = Input()
-    self.output = Output(shows: showsObservableSubject.asObservable())
+    self.output = Output(
+      shows: showsObservableSubject.asObservable(),
+      isRefreshing: isRefreshingObservableSubject.asObservable())
     client = ApiClient()
   }
   
@@ -43,12 +46,19 @@ final class MainViewModel {
       .debounce( RxTimeInterval.milliseconds(1000) , scheduler: MainScheduler.instance)
       .startWith("Better Call Saul")
       .flatMapLatest { query -> Observable<TVShowResult> in
-        return self.search(query: query, delay: 3000)
+        return self.search(query: query, delay: 500)
     }
     .map { result in
       print("create model with: [\(result.results.count) elements]")
       return [SingleSectionModel(header: "", items: result.results)]
     }
+    
+    input.didPullRefresh
+    .debug()
+      .subscribe(onNext: {
+        print("-- enter here didPullRefresh VM")
+      })
+    .disposed(by: disposeBag)
     
     // Una sola fuente para la View
     Observable.merge(tracksFromRepository, clearTracksOnQueryChanged)
@@ -67,9 +77,11 @@ extension MainViewModel {
   
   public struct Input {
     let query = BehaviorSubject<String>(value: "")
+    let didPullRefresh = BehaviorSubject<Void>(value: ())
   }
   
   public struct Output {
     let shows: Observable<[SingleSectionModel]>
+    let isRefreshing: Observable<Bool>
   }
 }

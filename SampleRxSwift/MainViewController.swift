@@ -18,6 +18,8 @@ class MainViewController: UIViewController {
   var tableView: UITableView!
   var searchController:UISearchController!
   
+  var refreshControl: UIRefreshControl!
+  
   // Life Cycle
   
   init(viewModel: MainViewModel) {
@@ -65,6 +67,9 @@ class MainViewController: UIViewController {
     tableView.register(nibName, forCellReuseIdentifier: "TableViewCell")
     
     tableView.rowHeight = UITableView.automaticDimension
+    
+    refreshControl = UIRefreshControl()
+    tableView.refreshControl = refreshControl
   }
   
   func setupSearchBar() {
@@ -74,7 +79,10 @@ class MainViewController: UIViewController {
     searchController.searchBar.placeholder = "Search TV Show"
     searchController.searchBar.delegate = self
     searchController.searchBar.barStyle = .default
-    tabBarController?.navigationItem.searchController = searchController
+    
+    // Wrong usar la searchBar en el Navigation!
+    //tabBarController?.navigationItem.searchController = searchController
+    tableView.tableHeaderView = searchController.searchBar
     
     navigationItem.hidesSearchBarWhenScrolling = false
     
@@ -101,6 +109,19 @@ class MainViewController: UIViewController {
     searchController.searchBar.rx
       .text.orEmpty
       .bind(to: viewModel.input.query)
+      .disposed(by: disposeBag)
+    
+    viewModel.output.isRefreshing
+    .debug()
+      .bind(to: refreshControl.rx.isRefreshing)
+      .disposed(by: disposeBag)
+    
+    refreshControl.rx
+      .controlEvent(.valueChanged)
+      .map { _ in return self.refreshControl.isRefreshing }
+      .filter { $0 == true }
+      .map { _ in return () }
+      .bind(to: viewModel.input.didPullRefresh)
       .disposed(by: disposeBag)
   }
   
