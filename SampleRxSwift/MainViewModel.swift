@@ -33,7 +33,12 @@ final class MainViewModel {
   }
   
   private func subscribe() {
-    input.query
+    // Cancel button tmb envía nextEvent ""
+    let clearTracksOnQueryChanged: Observable<[SingleSectionModel]> = input.query
+      .skip(1)
+      .map { _ in return [] }
+    
+    let tracksFromRepository: Observable<[SingleSectionModel]> = input.query
       .filter { !$0.isEmpty }
       .debounce( RxTimeInterval.milliseconds(1000) , scheduler: MainScheduler.instance)
       .startWith("Better Call Saul")
@@ -44,8 +49,11 @@ final class MainViewModel {
       print("create model with: [\(result.results.count) elements]")
       return [SingleSectionModel(header: "", items: result.results)]
     }
-    .bind(to: showsObservableSubject)
-    .disposed(by: disposeBag)
+    
+    // Una sola fuente para la View
+    Observable.merge(tracksFromRepository, clearTracksOnQueryChanged)
+      .bind(to: showsObservableSubject)
+      .disposed(by: disposeBag)
   }
   
   func search(query: String, delay: Int) -> Observable<TVShowResult> {
