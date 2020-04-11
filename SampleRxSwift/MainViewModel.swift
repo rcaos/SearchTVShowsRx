@@ -29,7 +29,6 @@ final class MainViewModel {
   }
   
   public func viewDidLoad() {
-    searchShows(query: "The X Files", delay: 500)
     subscribe()
   }
   
@@ -37,16 +36,12 @@ final class MainViewModel {
     input.query
       .filter { !$0.isEmpty }
       .debounce( RxTimeInterval.milliseconds(1000) , scheduler: MainScheduler.instance)
+      .startWith("Better Call Saul")
       .flatMapLatest { query -> Observable<TVShowResult> in
-        
-        var delay = 1000
-        if self.longRequest {
-          delay = 5000
-          self.longRequest = !self.longRequest
-        }
-        return self.search(query: query, delay: delay)
+        return self.search(query: query, delay: 3000)
     }
     .map { result in
+      print("create model with: [\(result.results.count) elements]")
       return [SingleSectionModel(header: "", items: result.results)]
     }
     .bind(to: showsObservableSubject)
@@ -57,29 +52,6 @@ final class MainViewModel {
     let searchEndPoint = TVShowsProvider.searchTVShow(delay: delay, query: query)
     
     return client.request(searchEndPoint, TVShowResult.self)
-  }
-  
-  
-  func searchShows(query: String, delay: Int) {
-    let searchEndPoint = TVShowsProvider.searchTVShow(delay: delay, query: query)
-    
-    client.request(searchEndPoint, TVShowResult.self)
-      .subscribe(onNext: { [weak self] result in
-        print("--> results for \(query), Delay: [\(delay)ms]: [\(result.results.count)]")
-        self?.createModel(header: query, with: result.results)
-        }, onError: { [weak self]  error in
-          print("error : [\(error)]")
-          self?.createModel(header: "", with: [])
-        }, onDisposed: {
-          print("-- disposed request: [\(query)]")
-      })
-      .disposed(by: disposeBag)
-  }
-  
-  private func createModel(header: String, with shows: [TVShow]) {
-    showsObservableSubject.onNext(
-      [SingleSectionModel(header: header, items: shows)]
-    )
   }
 }
 
