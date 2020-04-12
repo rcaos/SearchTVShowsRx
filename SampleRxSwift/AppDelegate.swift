@@ -22,14 +22,14 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     window = UIWindow(frame: UIScreen.main.bounds)
     
     let mainVC = MainViewController(viewModel: MainViewModel() )
+    let navigationBar = UINavigationController(rootViewController: mainVC)
+    
     mainVC.tabBarItem = UITabBarItem(tabBarSystemItem: .favorites, tag: 0)
     
     let mainTabBar = UITabBarController()
-    mainTabBar.viewControllers = [mainVC]
+    mainTabBar.viewControllers = [navigationBar]
     
-    let navigation = UINavigationController(rootViewController: mainTabBar)
-    
-    window?.rootViewController = navigation
+    window?.rootViewController = mainTabBar
     window?.makeKeyAndVisible()
     return true
   }

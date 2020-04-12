@@ -73,16 +73,17 @@ class MainViewController: UIViewController {
   }
   
   func setupSearchBar() {
-    searchController = UISearchController()
+    // MARK: - TODO, test with UISearchController
+    
+    searchController = UISearchController(searchResultsController: nil)
     searchController.obscuresBackgroundDuringPresentation = false
     searchController.hidesNavigationBarDuringPresentation = false
     searchController.searchBar.placeholder = "Search TV Show"
     searchController.searchBar.delegate = self
     searchController.searchBar.barStyle = .default
     
-    // Wrong usar la searchBar en el Navigation!
-    //tabBarController?.navigationItem.searchController = searchController
-    tableView.tableHeaderView = searchController.searchBar
+    navigationItem.searchController = searchController
+    //tableView.tableHeaderView = searchController.searchBar
     
     navigationItem.hidesSearchBarWhenScrolling = false
     
@@ -99,7 +100,11 @@ class MainViewController: UIViewController {
         //print("ask for element: \(indexPath)")
         return strongSelf.makeCellForEpisode(at: indexPath, element: element)
         
-    })
+    },
+      titleForHeaderInSection: { dataSource, sectionIndex in
+          let section = dataSource[sectionIndex]
+          return section.items.count > 0 ? "Results (\(section.items.count))" : "No repositories found"
+      })
     
     viewModel.output
       .shows
